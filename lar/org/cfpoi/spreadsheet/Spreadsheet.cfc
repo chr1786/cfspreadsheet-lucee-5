@@ -1915,6 +1915,8 @@
 		---->
 	</cffunction>
 
+	<!--- Start : Remarked By CHR, November 17, 2022 --->
+	<!---
 	<cffunction name="setCellValue" access="public" output="false" returntype="void"
 			hint="Sets the value of a single cell">
 		<cfargument name="cellValue" type="string" required="true" />
@@ -1927,6 +1929,30 @@
 		<!--- TODO: need to worry about data types? doing everything as a string for now --->
 		<cfset Local.cell.setCellValue( JavaCast("string", arguments.cellValue) ) />
 	</cffunction>
+	--->
+	<!--- End : Remarked By CHR, November 17, 2022 --->
+
+	<!--- Start : Added By CHR, November 17, 2022 --->
+	<cffunction name="setCellValue" access="public" output="false" returntype="void"
+			hint="Sets the value of a single cell">
+		<cfargument name="cellValue" type="string" required="true" />
+		<cfargument name="row" type="numeric" required="true" />
+		<cfargument name="column" type="numeric" required="true" />
+		<cfargument name="datatype" type="string" required="false" default="STRING" hint="Data type of the value of the cell. Data types are String, Date, or Numeric" /> 
+
+		<!--- Automatically create the cell if it does not exist, instead of throwing an error --->
+		<cfset Local.cell = initializeCell( row=arguments.row, column=arguments.column ) />
+
+		<cfif arguments.datatype eq "STRING">
+			<cfset Local.cell.setCellValue( JavaCast("string", arguments.cellValue) ) />
+		<cfelseif arguments.datatype eq "DATE">
+			<cfset Local.cell.setCellValue( parseDateTime(arguments.cellValue) ) />
+		<cfelseif arguments.datatype eq "NUMERIC">
+			<cfset Local.cell.setCellValue( JavaCast("double", val(arguments.cellValue) ) ) />
+		</cfif>
+
+	</cffunction>
+	<!--- End : Added By CHR, November 17, 2022 --->
 
 	<cffunction name="setColumnWidth" access="public" output="false" returntype="void"
 			hint="Sets the width of a column">

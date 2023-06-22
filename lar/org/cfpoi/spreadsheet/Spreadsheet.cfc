@@ -1500,6 +1500,8 @@
 		</cfif>
 	</cffunction>
 
+	<!--- Start : Remarked By CHR, November 18, 2022 --->
+	<!---
 	<cffunction name="formatCellRange" access="public" output="false" returntype="void"
 			hint="Applies formatting to a contigous range of cells">
 		<cfargument name="format" type="struct" required="true" />
@@ -1519,6 +1521,36 @@
 		</cfloop>
 
 	</cffunction>
+	--->
+	<!--- End : Remarked By CHR, November 18, 2022 --->
+
+	<!--- Start : Added By CHR, November 18, 2022 --->
+	<cffunction name="formatCellRange" access="public" output="false" returntype="void"
+			hint="Applies formatting to a contigous range of cells">
+		<cfargument name="format" type="struct" required="true" />
+		<cfargument name="startRow" type="numeric" required="true" />
+		<cfargument name="startColumn" type="numeric" required="true" />
+		<cfargument name="endRow" type="numeric" required="true" />
+		<cfargument name="endColumn" type="numeric" required="true" />
+		<cfargument name="cellStyle" type="any" required="false" Hint="Existing cellStyle to reusue" />
+
+		<cfset Local.rowNum = 0 />
+		<cfset Local.colNum = 0 />
+
+		<cfif structKeyExists(arguments, "cellStyle")>
+			<cfset Local.style = arguments.cellStyle />
+		<cfelse>
+			<cfset Local.style = buildCellStyle(arguments.format) />
+		</cfif>
+
+		<cfloop from="#arguments.startRow#" to="#arguments.endRow#" index="Local.rowNum">
+			<cfloop from="#arguments.startColumn#" to="#arguments.endColumn#" index="Local.colNum">
+				<cfset formatCell( arguments.format, Local.rowNum, Local.colNum, Local.style) />
+			</cfloop>
+		</cfloop>
+
+	</cffunction>
+	<!--- End : Added By CHR, November 18, 2022 --->
 
 	<cffunction name="formatColumn" access="public" output="false" returntype="void"
 			hint="Sets various formatting values on a column">
@@ -1938,17 +1970,61 @@
 		<cfargument name="cellValue" type="string" required="true" />
 		<cfargument name="row" type="numeric" required="true" />
 		<cfargument name="column" type="numeric" required="true" />
-		<cfargument name="datatype" type="string" required="false" default="STRING" hint="Data type of the value of the cell. Data types are String, Date, or Numeric" /> 
+		<cfargument name="datatype" type="string" required="false" default="AUTO" hint="Data type of the value of the cell. Data types are String, Date or Numeric." /> 
+		<cfargument name="dataformat" type="string" required="false" default="" hint="Data format mask of the value of the cell." /> 
+		<cfargument name="cellStyle" type="any" required="false" Hint="Existing cellStyle to reusue" />
 
 		<!--- Automatically create the cell if it does not exist, instead of throwing an error --->
 		<cfset Local.cell = initializeCell( row=arguments.row, column=arguments.column ) />
 
+		<cfif arguments.datatype eq "AUTO">
+			<cfif isDate(arguments.cellValue)>
+				<cfset arguments.datatype = "DATE">
+			<cfelseif isNumeric(arguments.cellValue)>
+				<cfset arguments.datatype = "NUMERIC">
+			<cfelse>
+				<cfset arguments.datatype = "STRING">
+			</cfif>
+		</cfif>
+
 		<cfif arguments.datatype eq "STRING">
+			<cfif structKeyExists( arguments, "cellStyle" )>
+				<cfset Local.cell.setCellStyle( arguments.cellStyle ) />	
+			</cfif>
 			<cfset Local.cell.setCellValue( JavaCast("string", arguments.cellValue) ) />
+
 		<cfelseif arguments.datatype eq "DATE">
+			<cfif structKeyExists( arguments, "cellStyle" )>
+				<cfset Local.cell.setCellStyle( arguments.cellStyle ) />	
+			<cfelse>
+				<cfset Local.cell.setCellStyle( buildCellStyle({dataFormat = (arguments.dataformat eq "" ? "dd-mmm-yyyy" : arguments.dataformat) }) ) />
+			</cfif>
+			<cfif isDate(arguments.cellValue)>
+				<cfset Local.cell.setCellValue( parseDateTime(arguments.cellValue) ) />
+			</cfif>
+
+		<!--- <cfelseif arguments.datatype eq "TIME">
+			<cfset Local.cell.setCellStyle( buildCellStyle({dataFormat = "hh:mm:ss" }) ) />
 			<cfset Local.cell.setCellValue( parseDateTime(arguments.cellValue) ) />
+
+		<cfelseif arguments.datatype eq "DATETIME">
+			<cfset Local.cell.setCellStyle( buildCellStyle({dataFormat = "dd-mmm-yyyy hh:mm:ss" }) ) />
+			<cfset Local.cell.setCellValue( parseDateTime(arguments.cellValue) ) /> --->
+
 		<cfelseif arguments.datatype eq "NUMERIC">
+			<cfif structKeyExists( arguments, "cellStyle" )>
+				<cfset Local.cell.setCellStyle( arguments.cellStyle ) />	
+			<cfelse>
+				<cfif trim(arguments.dataformat) neq "">
+					<cfset Local.cell.setCellStyle( buildCellStyle({dataFormat = arguments.dataformat }) ) />	
+				</cfif>
+			</cfif>
+
 			<cfset Local.cell.setCellValue( JavaCast("double", val(arguments.cellValue) ) ) />
+
+		<!--- <cfelseif arguments.datatype eq "MONEY">
+			<cfset Local.cell.setCellStyle( buildCellStyle({dataFormat = "##,######.00" }) ) />
+			<cfset Local.cell.setCellValue( JavaCast("double", val(arguments.cellValue) ) ) /> --->
 		</cfif>
 
 	</cffunction>
